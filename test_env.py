@@ -1,4 +1,3 @@
-#%% import libraries
 import pandas as pd
 import numpy as np
 import math
@@ -25,9 +24,13 @@ from akkerman_functions import *
 from new_feature_functions import *
 from point_pattern_features import *
 
+#==============================================================================
+# YC: load data set
+#==============================================================================
 
-rcount=0
+rcount=0 # YC: no idea what this represents
 
+# YC: sets 'ins' parameters to class attributes
 class Inst:
     def __init__(self, ins):
         self.tasks = ins['tasks']
@@ -41,11 +44,10 @@ class Inst:
         self.u = ins['u']
         self.Q = ins['Q']
         self.feasibleShiftsForClients = ins['feasibleShiftsForClients']
-
-#%% Load data
+        
+# YC: output measures of schedule
 metrics = ['total_waiting_time', 'total_travel_time','total_overtime','total_idle_time']
 
-###############################################################################    
 #data_indices = [26,27,28]
 # data_indices = [33,34] # only morning tasks, with half the nr of tasks
 data_indices = [35,36,37] # all customers have same tw length
@@ -64,11 +66,9 @@ instances = [Inst(dataset['instance'][i]['instance']) for i in range(len(dataset
 dataset.pop('instance')
 dataset.pop('info')
 
-
-
-
-
-#%% add and calc features
+#==============================================================================
+# YC: calculate features and add to data
+#==============================================================================
 
 # add Akkerman features
 f_list = ["nr_cust", "area_encl_rec", "peri_encl_rec", "area_convx_hull", "peri_convx_hull", 
@@ -204,7 +204,9 @@ for ins in instances:
     #print(indx)
 
 
-#%% prepare data frame
+#==============================================================================
+# YC: setup dataframe from dataset for analysis
+#==============================================================================
 
 indx_akkerman_zero = [9,10,11,14,19,23,24,29,30,33,34,37,38,39,40,42,43,47,48]
 columns_to_be_deleted = [f[i] for i in indx_akkerman_zero] 
@@ -236,7 +238,7 @@ df.insert(0, 'ins index', [i for i in range(len(instances))])
 #                 'service time std early', 'service time std mid', 'service time std late',
 #                 'service time mean early', 'service time mean mid', 'service time mean late']
 
-#%%
+#
 # imp = ['std tw length',
 #  'extra_dist_from_nn',
 #  'Local FCFS travel',
@@ -255,11 +257,14 @@ df.insert(0, 'ins index', [i for i in range(len(instances))])
 #         features.remove(feat)
 
 
-#%% environment to train and test ML model on generated data
+# environment to train and test ML model on generated data
 metric = metrics[2] # [wait, trav, over, idle]
 
             
-#define machine learning methods
+#==============================================================================
+# YC: define ML methods and prepare data
+#==============================================================================
+
 def linear_regression(X_train,y_train,X_test):
     model = LinearRegression()
     reg = model.fit(X_train, y_train)
@@ -288,6 +293,8 @@ Y = df[metric].values
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size = 0.1, random_state = 100)
 
 
+# YC: first classify if waiting time is zero or positive 
+# followed by prediciting positives if I recall correctly
 TwoStageML = False
 if TwoStageML:
     # First stage ML 
@@ -311,15 +318,18 @@ if TwoStageML:
 
 
 
-#%% Prediction outcome
- #### Benchmark ########################################
+#==============================================================================
+# YC: results and displays
+#==============================================================================
+
+#benchmark
 print("")
 print("benchmark of predicting {} with mean".format(metric))
 y_pred_benchmark = [np.mean(y_train) for i in range(len(y_test))]
 print('MAE:',sklmetrics.mean_absolute_error(y_test, y_pred_benchmark))
 print('WAPE:', np.sum(abs(y_test-y_pred_benchmark))/np.sum(y_test))
 print("")
-##############################################################
+
 
     
 if False:
@@ -399,7 +409,7 @@ if show_feature_importance:
     # print("\n mean TSP constant: ", np.mean(TSP_constant))
     # print("actual constant (Figliozzi): ", 0.765)
 
-#%% Correlation matrix
+# Correlation matrix
 # imp_df = {'feature': important_features, 'score':importance_of_imp_feat}
 # imp_df = pd.DataFrame(imp_df)
 # sorted_imp_df = imp_df.sort_values(by='score',ascending=False)
@@ -410,7 +420,7 @@ if show_feature_importance:
 # sns.heatmap(corr_matrix,annot=True)
 # plt.tight_layout()
 # plt.savefig("corr matrix.png", dpi=300)
-#%%  plot features
+#  plot features
 # inss = [0,20,50,799]
 # colors = ['r','g','c','y']
 # track_ins = np.array(df_big_waiting['ins index'])[inss].tolist()

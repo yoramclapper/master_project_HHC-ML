@@ -1,6 +1,6 @@
 import multiprocessing
 import gomea
-import instance6 as instance
+import instance6 as instance # YC: instance6 not in modules
 import pickle
 
 
@@ -10,6 +10,8 @@ def get_result(instance):
 
  
 if __name__ == '__main__':
+    
+    # YC: not sure why data is split in 3
     for j in range(3):
         dataset = {
             'instance' : [],

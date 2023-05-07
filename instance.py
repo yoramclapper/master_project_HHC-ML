@@ -281,6 +281,8 @@ def get_ins(min_task=30,max_task=60):
     S = np.array(tasks.service_time)
     d = np.array(tasks.travel_matrix)[1:,1:]
     tw = np.array(tasks.time_window)
+    
+    # YC: split tasks by day part to define shifts by day part
     early_tasks, mid_tasks, late_tasks = [],[],[] 
     for i in range(nr_tasks):
         if tw[i,1] <= 720: 
@@ -333,7 +335,6 @@ def get_ins(min_task=30,max_task=60):
                        ] + [1020 for _ in range(est_nr_of_shifts_late)]
     shift_length = [300]*(est_nr_of_shifts_early + est_nr_of_shifts_mid + est_nr_of_shifts_late)
     shifts = ShiftParams(shift_length, start_time, estimates)
-    
     
     return Instance(tasks,shifts)
 
