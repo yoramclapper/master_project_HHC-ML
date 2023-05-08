@@ -1,6 +1,7 @@
 import multiprocessing
 import gomea
-import instance6 as instance # YC: instance6 not in modules
+#import instance6 as instance # YC: instance6 not in modules
+import instance # YC: added instead of instance6
 import pickle
 
 

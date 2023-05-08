@@ -50,17 +50,24 @@ metrics = ['total_waiting_time', 'total_travel_time','total_overtime','total_idl
 
 #data_indices = [26,27,28]
 # data_indices = [33,34] # only morning tasks, with half the nr of tasks
-data_indices = [35,36,37] # all customers have same tw length
+#data_indices = [35,36,37] # all customers have same tw length
+data_indices = [0,1,2] # YC: data set indices of newly generated data (8-5-2023)
 for data_indx in data_indices:
-    dataset_str = 'dataset_gom' + str(data_indx) + '.pickle'
+    #dataset_str = 'dataset_gom' + str(data_indx) + '.pickle'
+    dataset_str = 'dataset_vrp' + str(data_indx) + '.pickle' # YC: data set name of newly generated data (8-5-2023)
     with open(dataset_str, 'rb') as handle:
         data = pickle.load(handle)
-    if dataset_str == 'dataset_gom{}.pickle'.format(data_indices[0]):
-        dataset = data.copy()
-    else:
-        dataset['instance'] += data['instance']
-        for metric in metrics:
-            dataset[metric] += data[metric]
+    # if dataset_str == 'dataset_gom{}.pickle'.format(data_indices[0]):
+    #     dataset = data.copy()
+    # else:
+    #     dataset['instance'] += data['instance']
+    #     for metric in metrics:
+    #         dataset[metric] += data[metric]
+    
+    # YC: to load newly generated data within framework of test_env module 
+    # it is probably necessary to concatenate data at each index (8-5-2023)
+    dataset = data.copy() 
+    
 del data
 instances = [Inst(dataset['instance'][i]['instance']) for i in range(len(dataset['instance']))]
 dataset.pop('instance')
