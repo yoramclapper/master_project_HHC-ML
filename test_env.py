@@ -293,9 +293,9 @@ def train_classifier(X_train, y_train, classifier_id, **kwargs):
     if classifier_id == 'logistic_regression':
         model = LogisticRegression(max_iter=1000, **kwargs)
     elif classifier_id == 'random_forest':
-        model = RandomForestClassifier(**kwargs)
+        model = RandomForestClassifier(n_jobs=-1, **kwargs)
     elif classifier_id == 'xgboost':
-        model = xgb.XGBClassifier(**kwargs)
+        model = xgb.XGBClassifier(n_jobs=-1, **kwargs)
     elif classifier_id == 'svm':
         model = SVC(**kwargs)
     elif classifier_id == 'knn':
@@ -314,9 +314,9 @@ def train_regressor(X_train, y_train, classifier_id, **kwargs):
     if classifier_id == 'linear_regression':
         model = LinearRegression(**kwargs)
     elif classifier_id == 'random_forest':
-        model = RandomForestRegressor(**kwargs)
+        model = RandomForestRegressor(n_jobs=-1, **kwargs)
     elif classifier_id == 'xgboost':
-        model = xgb.XGBRegressor(**kwargs)
+        model = xgb.XGBRegressor(n_jobs=-1, **kwargs)
     elif classifier_id == 'mlp':
         model = MLPRegressor(**kwargs)
 
@@ -325,16 +325,16 @@ def train_regressor(X_train, y_train, classifier_id, **kwargs):
     return model, val_score
 
 
-def random_forest_classifier_search(X_train, y_train):
-    class_ = RandomForestClassifier()
-    # Method of selecting samples for training each tree
-    random_grid = {'n_estimators': [int(x) for x in np.linspace(start=50, stop=500, num=10)],
-                   'max_depth': [int(x) for x in np.linspace(5, 50, num=10)],
-                   'min_samples_split': [2, 5, 10],
-                   'min_samples_leaf': [1, 2, 4]}
-    random_search = RandomizedSearchCV(estimator=class_, verbose=3, param_distributions=random_grid, n_iter=50, cv=3)
-    random_search.fit(X_train, y_train)
-    return random_search.best_estimator_
+# def random_forest_classifier_search(X_train, y_train):
+#     class_ = RandomForestClassifier()
+#     # Method of selecting samples for training each tree
+#     random_grid = {'n_estimators': [int(x) for x in np.linspace(start=50, stop=500, num=10)],
+#                    'max_depth': [int(x) for x in np.linspace(5, 50, num=10)],
+#                    'min_samples_split': [2, 5, 10],
+#                    'min_samples_leaf': [1, 2, 4]}
+#     random_search = RandomizedSearchCV(estimator=class_, verbose=3, param_distributions=random_grid, n_jobs=-1, n_iter=50, cv=3)
+#     random_search.fit(X_train, y_train)
+#     return random_search.best_estimator_
 
 
 def hyperparameter_opt(model_name, X_train, y_train, classifier=False):
@@ -377,12 +377,14 @@ def hyperparameter_opt(model_name, X_train, y_train, classifier=False):
     elif model_name == 'linear_regression' or model_name == 'logistic_regression':
         return {}
 
+    scoring = 'accuracy' if classifier else 'neg_mean_absolute_error'
     random_search = RandomizedSearchCV(estimator=model,
+                                       scoring=scoring,
                                        param_distributions=param_grid,
                                        n_iter=n_iter,
-                                       n_jobs=30,
+                                       n_jobs=-1,
                                        cv=3,
-                                       verbose=2)
+                                       verbose=0)
     random_search.fit(X_train, y_train)
     print(random_search.best_params_)
     return random_search.best_params_
@@ -391,7 +393,7 @@ def hyperparameter_opt(model_name, X_train, y_train, classifier=False):
 def select_features_random_forest(X_train, y_train):
     #params = hyperparameter_opt('random_forest', X_train, y_train, classifier=False)
     regr, _ = train_regressor(X_train, y_train, 'random_forest')
-    rfe = RFECV(estimator=regr, step=1, verbose=3)
+    rfe = RFECV(estimator=regr, step=1, verbose=3, n_jobs=-1, cv=3)
     rfe.fit(X_train, y_train)
     return rfe.get_support(indices=True)
 
@@ -575,8 +577,8 @@ def perform_ml(df, train_indices, test_indices, metric, feature_selection='all')
                         f.write('feature,importance\n')
                         for feature, importance in zip(features, importances):
                             f.write('{},{}\n'.format(feature, importance))
-                    make_plots(X_test, y_test, y_pred, importances, features, os.path.join(output_folder, '{}_pred.pdf'.format(prefix)),
-                               os.path.join(output_folder,  '{}_importances.pdf'.format(prefix)))
+                    make_plots(X_test, y_test, y_pred, importances, features, metric, os.path.join(output_folder, '{}_pred.png'.format(prefix)),
+                               os.path.join(output_folder,  '{}_importances.png'.format(prefix)))
         #######################################################
 
     ################ Plots #######################################
@@ -634,20 +636,22 @@ def register_scores(scores_df, model_name, run_number, phase, tuned, y_test, y_p
     return scores_df
 
 
-def make_plots(X_test, y_test, y_pred, importance, features, name1, name2=None):
+def make_plots(X_test, y_test, y_pred, importance, features, metric, name1, name2=None):
     res = pd.DataFrame(
         {'ins index': X_test[:, 0], 'Real Values': y_test, 'Predicted Values': y_pred,
          'abs error': abs(y_pred - y_test)})
     res = res.sort_values(by='Real Values')
     res.insert(0, 'plot index', [i for i in range(len(y_pred))])
     res2 = res.sort_values(by='abs error', ascending=False)
+    plt.figure()
     plt.plot(res['Real Values'].values, 'bo', markersize=2, label='Actual')
     plt.plot(res['Predicted Values'].values, 'ro', markersize=2, label='Predicted')
-    plt.xlabel('Instances sorted by real waiting time')
-    plt.ylabel('waiting')
+    plt.xlabel('Instances sorted by real {}'.format(' '.join(metric.split('_'))))
+    plt.ylabel('{}'.format(' '.join(metric.split('_'))))
     plt.legend()
     plt.tight_layout()
     plt.savefig(name1, dpi=600)
+    plt.close()
     #plt.show()
 
     important_features = []
@@ -659,6 +663,7 @@ def make_plots(X_test, y_test, y_pred, importance, features, name1, name2=None):
                 important_features.append(features[i])
                 importance_of_imp_feat.append(importance[i])
         # plot feature importance
+        plt.figure()
         plt.bar(important_features, importance_of_imp_feat)
         plt.xticks(
             rotation=45,
@@ -667,10 +672,11 @@ def make_plots(X_test, y_test, y_pred, importance, features, name1, name2=None):
             fontsize=8
         )
         plt.ylabel("Relative feature importance")
-        plt.tight_layout()
+        #plt.tight_layout()
         # plt.savefig(metric[6:]+" feature importance vrptw all feat except periodwise.png", dpi=300)
 
         plt.savefig(name2, dpi=600)
+        plt.close()
         #plt.show()
         # print('len imp', len(important_features))
 
