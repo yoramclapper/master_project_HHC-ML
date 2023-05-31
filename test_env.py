@@ -380,7 +380,7 @@ def hyperparameter_opt(model_name, X_train, y_train, classifier=False):
     random_search = RandomizedSearchCV(estimator=model,
                                        param_distributions=param_grid,
                                        n_iter=n_iter,
-                                       n_jobs=20,
+                                       n_jobs=30,
                                        cv=3,
                                        verbose=2)
     random_search.fit(X_train, y_train)
