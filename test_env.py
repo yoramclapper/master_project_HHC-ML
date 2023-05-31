@@ -5,6 +5,10 @@ import pandas as pd
 import json
 import numpy as np
 import math
+
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV, cross_validate
@@ -23,6 +27,7 @@ import scipy.stats as stats
 from scipy.spatial import ConvexHull
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+
 
 import schedule
 import gomea
@@ -375,7 +380,7 @@ def hyperparameter_opt(model_name, X_train, y_train, classifier=False):
     random_search = RandomizedSearchCV(estimator=model,
                                        param_distributions=param_grid,
                                        n_iter=n_iter,
-                                       n_jobs=-1,
+                                       n_jobs=20,
                                        cv=3,
                                        verbose=0)
     random_search.fit(X_train, y_train)
@@ -643,7 +648,7 @@ def make_plots(X_test, y_test, y_pred, importance, features, name1, name2=None):
     plt.legend()
     plt.tight_layout()
     plt.savefig(name1, dpi=600)
-    plt.show()
+    #plt.show()
 
     important_features = []
     importance_of_imp_feat = []
@@ -666,7 +671,7 @@ def make_plots(X_test, y_test, y_pred, importance, features, name1, name2=None):
         # plt.savefig(metric[6:]+" feature importance vrptw all feat except periodwise.png", dpi=300)
 
         plt.savefig(name2, dpi=600)
-        plt.show()
+        #plt.show()
         # print('len imp', len(important_features))
 
 
